@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Vocabulario Avanzado - Clase</title>
+    
+    <style>
+        :root { --p: #2c3e50; --a: #3498db; --bg: #f4f7f6; --ok: #27ae60; --bad: #e74c3c; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        /* Título centrado */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        /* Botones para cambiar entre filas */
+        .row-selector {
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+            margin-bottom: 15px;
+        }
+
+        .row-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--p);
+            border-radius: 10px;
+            background: white;
+            color: var(--p);
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .row-btn.active {
+            background: var(--p);
+            color: white;
+        }
+
+        .card-container { 
+            perspective: 1000px;
+            width: 90vw; 
+            max-width: 450px; 
+            height: 300px; 
+            cursor: pointer;
+            touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card { 
+            width: 100%;
+            height: 100%; 
+            position: relative; 
+            transition: transform 0.4s; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border-radius: 15px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .face { 
+            position: absolute;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 25px; 
+            box-sizing: border-box; 
+            border-radius: 15px; 
+            text-align: center; 
+            font-size: 1.4rem;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .front { background: white; color: var(--p); font-weight: bold; border: 2px solid #ddd; }
+        .back { background: var(--a); color: white; transform: rotateY(180deg); font-size: 1.2rem; }
+
+        .controls { 
+            margin-top: 15px;
+            display: flex; 
+            gap: 10px; 
+            width: 90vw; 
+            max-width: 450px;
+        }
+
+        .action-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+        }
+
+        button { 
+            flex: 1;
+            padding: 15px 10px; 
+            border: none; 
+            border-radius: 12px; 
+            background: var(--p); 
+            color: white; 
+            font-size: 1rem; 
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .btn-know { background: var(--ok); }
+        .btn-dont-know { background: var(--bad); }
+
+        .info { margin-top: 12px; font-weight: bold; color: #7f8c8d; }
+        
+        .btn-invert { 
+            background: #8e44ad; 
+            color: white; 
+            border: none;
+            border-radius: 12px;
+            padding: 15px; 
+            font-weight: bold; 
+            width: 90vw; 
+            max-width: 450px;
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            font-size: 1rem;
+        }
+
+        /* Botón para reiniciar el progreso */
+        .btn-reset {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: normal;
+            width: 90vw;
+            max-width: 450px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .btn-reset:hover { opacity: 1; }
+
+        @media (max-height: 600px) {
+            .card-container { height: 220px; }
+            .face { font-size: 1.1rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Deportes y entretenimiento</h1>
+    <button class="btn-invert" onclick="invertirIdiomas()">🔄 Invertir: <span id="modo-texto">Español ➡ Checo</span></button>
+
+    <div class="row-selector">
+        <button class="row-btn active" id="btn-fila-no" onclick="setFila('no')">Por aprender (<span id="count-no">0</span>)</button>
+        <button class="row-btn" id="btn-fila-si" onclick="setFila('si')">Ya aprendidas (<span id="count-si">0</span>)</button>
+    </div>
+
+    <div class="card-container" onclick="flip()">
+        <div class="card" id="c">
+            <div class="face front" id="q">Cargando...</div>
+            <div class="face back" id="a">...</div>
+        </div>
+    </div>
+
+    <div class="info" id="status">0 / 0</div>
+
+    <div class="controls">
+        <button onclick="prev()">⬅ Ant.</button>
+        <button onclick="shuffle()">🔀 Mezclar</button>
+        <button onclick="next()">Sig. ➡</button>
+    </div>
+
+    <div class="action-controls" id="eval-controls">
+        <button class="btn-dont-know" onclick="clasificarPalabra(false)">❌ No la sé</button>
+        <button class="btn-know" onclick="clasificarPalabra(true)">✔ Ya la sé</button>
+    </div>
+
+    <button class="btn-reset" onclick="reiniciarProgreso()">🗑 Reiniciar todo el progreso</button>
+
+<script>
+    // Tu lista original de palabras
+    const todasLasPalabras = [
+        {q: "cabeza, f., asentir, mover, alzar, bajar, girar la cabeza", a: "hlava, přikývnout, hýbat, zvednout, sklonit, otočit"},
+        {q: "cabizbajo, adj.", a: "se svěšenou hlavou"},
+        {q: "pómulo, m.", a: "lícní kost"},
+        {q: "boca, f.", a: "ústa"},
+        {q: "paladar, m.", a: "patro v ústech"},
+        {q: "mandíbula, f.", a: "čelist"},
+        {q: "diente, m. de leche", a: "mléčný zub"},
+        {q: "muela, f., del juicio", a: "zub moudrosti"},
+        {q: "incisivo, m., colmillo, m., molar, m.", a: "řezák, špičák, stolička"},
+        {q: "maxilar, m. superior x inferior, encía, f.", a: "horní čelist x dolní čelist"},
+        {q: "esmalte, m. del diente, raíz, f.", a: "zubní sklovina, kořen zubu"},
+        {q: "cuello, m., nuca, f., desnucarse", a: "krk, šíje, zlomit si vaz"},
+        {q: "tronco, m. torso m.", a: "trup"},
+        {q: "hombro, m., encogerse de hombros", a: "rameno, pokrčit rameny"},
+        {q: "espalda, f., guardaespaldas, m. f.", a: "záda, bodyguard"},
+        {q: "tórax, m.", a: "hrudník"},
+        {q: "pecho, m., seno, m.", a: "hruď, prso"},
+        {q: "costilla, f.", a: "žebro"},
+        {q: "hacer cosquillas, pl. f.", a: "lechtat"},
+        {q: "vientre, m./ abdomen, m.", a: "břicho"},
+        {q: "cintura, f., agarrar/ coger por la cintura", a: "las, chytit kolem pasu"},
+        {q: "empeine, m.", a: "nárt"},
+        {q: "trasero, m., dar en el trasero, nalga, f.", a: "zadek, dát někomu na zadek, hýždě"},
+        {q: "ano, m.", a: "řitní otvor"},
+        {q: "ponerse de pie", a: "postavit se"},
+        {q: "ponerse en cuclillas", a: "dřepnout si"},
+        {q: "incorporarse x tumbarse", a: "posadit se, lehnout si"},
+        {q: "inclinarse", a: "naklonit se"},
+        {q: "agacharse", a: "sehnout se"},
+        {q: "darse la vuelta", a: "otočit se"},
+        {q: "extremidad, f. superior x inferior", a: "horní x dolní končetina"},
+        {q: "flexionar, doblar", a: "ohnout, pokrčit"},
+        {q: "brazo, m., axila, f., codo, m.., antebrazo, m.,", a: "paže, podpaží, loket, předloktí"},
+        {q: "muñeca, f., puño, m., mano, f., palma, f. x dorso, m. de la mano", a: "zápěstí, pěst, rusa s prsty, dlaň x hřbet ruky"},
+        {q: "dedo, m., nudillo, m., falange, f., uña, f.", a: "prst, kloub prstu, článek prstu, nehet"},
+        {q: "pierna, f., muslo, m., rodilla, f.", a: "noha, stehno, koleno"},
+        {q: "pantorrilla, f., espinilla, f.", a: "lýtko, holeň"},
+        {q: "tobillo, m.", a: "kotník"},
+        {q: "pie, m., planta, f., talón, m., punta, f.", a: "noha, chodidlo, pata, špička"},
+        {q: "callo, m., juanete, m.", a: "kostní výrústek u palce nohy"},
+        {q: "Esqueleto", a: "kostra"},
+        {q: "hueso, m., cartílago, m./ ternilla, f.", a: "kost, chrupavka"},
+        {q: "articulación, f.", a: "kloub"},
+        {q: "cráneo, m., cerviz, f.", a: "lebka, šíje"},
+        {q: "columna vertebral, f./ espinazo, m.", a: "páteř"},
+        {q: "médula, f./ tuétano, m , médula, f. espinal", a: "mícha"},
+        {q: "vértebra, f.", a: "obratel"},
+        {q: "clavícula, f., esternón, m., omóplato, m.", a: "kliční kost, hrudní kost, lopatka"},
+        {q: "costilla, f.", a: "žebro"},
+        {q: "pelvis, f., cadera, f., pubis, m.", a: "pánev, kyčel, stydká kost"},
+        {q: "sistema, m. motriz", a: "pohybový systém/pohybový aparát"},
+        {q: "ligamento, m.", a: "vaz"},
+        {q: "tendón, m.", a: "šlacha"},
+        {q: "diafragma, m.", a: "bránice"},
+        {q: "dar un tirón/ calambre/ espasmo a alguien", a: "křeč"},
+        {q: "contraer, contracción, f.", a: "stáhnout, stažení"},
+        {q: "distender, distensión, f.", a: "natáhnout, natažení"},
+        {q: "convulsión, f.", a: "záchvat"},
+        {q: "bíceps, m., tener, demostrar los bíceps", a: "ukazovat bicepsy, dvojhlavý sval pažní"},
+        {q: "hueso, m., músculo, m. entumecido/ dormido", a: "kost, znecitlivělý sval"},
+        {q: "poner tenso/ en tensión el músculo", a: "napnout sval"},
+        {q: "arteria, f., vena, f.", a: "tepna, žíla"},
+        {q: "sangre, f., glóbulo, m., leucocito, m.", a: "krev, krvinka, bílá krvinka"},
+        {q: "nervio, m.", a: "nerv"},
+        {q: "célula, f.", a: "buňka"},
+        {q: "tejido, m.", a: "tkáň"},
+        {q: "carne, f., piel, f., * pellejo, m.", a: "maso, kůže"},
+        {q: "poro, m.", a: "pór"},
+        {q: "cutis, m., poroso", a: "pórovitý"},
+        {q: "cuero, m. cabelludo", a: "pokožka hlavy"},
+        {q: "órgano, m. interno x externo", a: "orgán, vnitřní x vnější"},
+        {q: "* entrañas, pl.f.", a: "vnitřnosti"},
+        {q: "cerebro, m./ * seso, m.", a: "mozek"},
+        {q: "glándula, f., hormona, f.", a: "hormon"},
+        {q: "tiroides, m.", a: "štítná žláza"},
+        {q: "amígdala, f.", a: "krční mandle"},
+        {q: "faringe, f., laringe, f./ * nuez, f./ * bocado, m. de Adán", a: "hltan, hrtan, ohryzek"},
+        {q: "tráquea, f., garganta, f.", a: "průdušnice, hrdlo"},
+        {q: "pulmón, m., bronquio, m.", a: "průduška"},
+        {q: "inhalar, inspirar, aspirar", a: "vdechovat"},
+        {q: "exhalar, espirar", a: "vydechovat"},
+        {q: "corazón, m., aorta, f.", a: "srdce, aorta"},
+        {q: "circular, circulación, f. de sangre", a: "obíhat, krevní oběh"},
+        {q: "estómago, m., esófago, m.", a: "žaludek, jicen"},
+        {q: "páncreas, m.", a: "slinivka břišní"},
+        {q: "intestino, m. delgado, grueso, ciego, apéndice, m.", a: "dlouhé, tlusté, slepé střevo, apendix"},
+        {q: "riñón, m., doler los riñones", a: "ledvina, bolest ledvin"},
+        {q: "hígado, m., vejiga, f., vesícula, f. biliar, bilis, f.", a: "játra, žluč"},
+        {q: "vejiga, f. urinaria", a: "močový měchýř"},
+        {q: "órganos pl.m. genitales", a: "pohlavní orgány"},
+        {q: "** cabeza cuadrada", a: "una persona que piensa de manera rígida y no acepta otras ideas. "},
+        {q: "** cabeza de turco", a: "la persona a la que culpan algo aunque no es la única responsable. "},
+        {q: "** estar mal de la cabeza", a: "estar loco. "},
+        {q: "** no caberle algo en la cabeza", a: "no entenderlo. "},
+        {q: "** cabeza/ boca abajo x arriba", a: "invertido × normal."},
+        {q: "** de cabeza", a: "directo, sin dudar."},
+        {q: "** de pies a cabeza", a: "completamente, entero."},
+        {q: "** subirse una bebida a la cabeza", a: "marearse, embriagarse."},
+        {q: "** traer a uno de cabeza", a: "agobiarlo, preocuparlo."},
+        {q: "** (salir/ llevar) a hombros", a: "celebrado, triunfante."},
+        {q: "** arrimar el hombro", a: "ayudar, colaborar."},
+        {q: "** echarse al hombro/ a la espalda", a: "asumir, cargar."},
+        {q: "** andar manga por hombro", a: "desordenado, caótico."},
+        {q: "** mirar a uno por encima del hombro", a: "despreciarlo, creerse superior."},
+        {q: "** tener alguien la cabeza sobre los hombros", a: "ser sensato."},
+        {q: "** ser para caerse de espaldas", a: "asombroso, impactante."},
+        {q: "** atacar por la espalda", a: "traicionar, emboscar."},
+        {q: "** dar la espalda a alguien", a: "ignorarlo, abandonarlo."},
+        {q: "** guardarse las espaldas", a: "protegerse, prevenirse."},
+        {q: "** a pecho (descubierto)", a: "sin defensa."},
+        {q: "** tomar una cosa a pecho", a: "tomársela en serio."},
+        {q: "** echarse algo entre pecho y espalda", a: "comerlo o beberlo."},
+        {q: "** partirse el pecho por algo o por alguien", a: "esforzarse mucho."},
+        {q: "** hablar por los codos", a: "hablar muchísimo."},
+        {q: "** empinar/ alzar el codo", a: "beber alcohol."},
+        {q: "** clavar/ desgastarse los codos", a: "estudiar mucho."},
+        {q: "** codo con codo", a: "en colaboración."},
+        {q: "** estar hasta los codos", a: "muy ocupado."},
+        {q: "** codearse con", a: "relacionarse, mezclarse."},
+        {q: "** creer algo a pies juntillas", a: "creerlo ciegamente."},
+        {q: "** estudiar algo al pie de la letra", a: "literalmente, exacto."},
+        {q: "** empezar con buen x mal pie", a: "iniciar bien × mal."},
+        {q: "** salir de un sitio con los pies por delante", a: "morir, fallecer."},
+        {q: "** andar con pies de plomo", a: "actuar cautelosamente."},
+        {q: "** estar al pie del cañón", a: "firme, trabajando."},
+        {q: "** hacer pie en una piscina", a: "tocar fondo."},
+        {q: "** no dar pie con bola", a: "equivocarse continuamente."},
+        {q: "** salir por pies de un sitio", a: "huir rápido."},
+        {q: "** sacar los pies del plato", a: "excederse, pasarse."},
+        {q: "** parar los pies a alguien", a: "frenarlo, contenerlo."},
+        {q: "** calado/ empapado/ mojado hasta los huesos", a: "totalmente mojado."},
+        {q: "** estar en los huesos/ esquelético/escuálido", a: "muy flaco."},
+        {q: "** tener los huesos molidos", a: "cansadísimo, dolorido."},
+        {q: "** dar en hueso", a: "acertar mal."},
+        {q: "** ir de cráneo/ de cabeza", a: "ir apurado."},
+        {q: "** hasta los tuétanos", a: "profundamente, totalmente."},
+        {q: "** a sangre fría", a: "sin compasión."},
+        {q: "** hervir la sangre a alguien", a: "enfurecerse, indignarse."},
+        {q: "** de sangre caliente", a: "apasionado, impulsivo."},
+        {q: "** llevar algo en la sangre", a: "tenerlo innato."},
+        {q: "** tener sangre de horchata", a: "ser calmado."},
+        {q: "** de sangre azul", a: "nobleza, aristocracia."},
+        {q: "** chupar la sangre a alguien", a: "explotarlo, agotarlo."},
+        {q: "** sudar sangre", a: "esforzarse muchísimo."},
+        {q: "** reír a mandíbula batiente", a: "reír carcajeándose."},
+        {q: "** no tener entrañas", a: "ser cruel."},
+        {q: "** sacar las entrañas a alguien", a: "herirlo, destriparlo."},
+        {q: "** secarse el cerebro", a: "agotarse mentalmente."},
+        {q: "** con el corazón en la mano", a: "sinceramente, vulnerable."},
+        {q: "** abrir el corazón a alguien", a: "confesarse, sincerarse."},
+        {q: "** decir algo de corazón", a: "sinceramente, honestamente."},
+        {q: "** no caberle a uno el corazón en el pecho", a: "emocionarse mucho."},
+        {q: "** costar un riñón", a: "ser carísimo."},
+
+        
+
+
+
+
+
+
+
+
+    ];
+
+    // Listas dinámicas para clasificar las palabras
+    let palabrasNoConozco = [];
+    let palabrasYaConozco = [];
+    let invertido = false;
+    let filaActiva = 'no'; 
+    let idx = 0;
+
+    const cardEl = document.getElementById('c');
+    const qEl = document.getElementById('q');
+    const aEl = document.getElementById('a');
+    const sEl = document.getElementById('status');
+
+    // FUNCIÓN PARA GUARDAR EN LOCALSTORAGE
+    function guardarProgreso() {
+        localStorage.setItem('palabrasNoConozco', JSON.stringify(palabrasNoConozco));
+        localStorage.setItem('palabrasYaConozco', JSON.stringify(palabrasYaConozco));
+    }
+
+    // FUNCIÓN PARA CARGAR DESDE LOCALSTORAGE AL INICIAR
+    function cargarProgreso() {
+        const localNoConozco = localStorage.getItem('palabrasNoConozco');
+        const localYaConozco = localStorage.getItem('palabrasYaConozco');
+
+        if (localNoConozco !== null && localYaConozco !== null) {
+            // Si ya existe un progreso guardado, lo cargamos
+            palabrasNoConozco = JSON.parse(localNoConozco);
+            palabrasYaConozco = JSON.parse(localYaConozco);
+        } else {
+            // Si es la primera vez, iniciamos con la lista completa de origen
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+        }
+    }
+
+    // FUNCIÓN PARA REINICIAR TODO
+    function reiniciarProgreso() {
+        if (confirm("¿Seguro que quieres borrar tu progreso y empezar de cero?")) {
+            localStorage.removeItem('palabrasNoConozco');
+            localStorage.removeItem('palabrasYaConozco');
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+            idx = 0;
+            filaActiva = 'no';
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+            update();
+        }
+    }
+
+    function getListaActiva() {
+        return filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+    }
+
+    function update() {
+        const lista = getListaActiva();
+        cardEl.classList.remove('flipped');
+
+        document.getElementById('count-no').innerText = palabrasNoConozco.length;
+        document.getElementById('count-si').innerText = palabrasYaConozco.length;
+
+        if (lista.length === 0) {
+            qEl.innerText = "¡Lista vacía!";
+            aEl.innerText = filaActiva === 'no' ? "¡Enhorabuena, has repasado todo!" : "No has añadido ninguna palabra aquí aún.";
+            sEl.innerText = "0 / 0";
+            return;
+        }
+
+        if (idx >= lista.length) idx = Math.max(0, lista.length - 1);
+
+        setTimeout(() => {
+            if (!invertido) {
+                qEl.innerText = lista[idx].q; 
+                aEl.innerText = lista[idx].a; 
+            } else {
+                qEl.innerText = Math.random() < 0 ? "Bug" : lista[idx].a; // Corrección visual fluida
+                aEl.innerText = lista[idx].q; 
+            }
+            sEl.innerText = `${idx + 1} / ${lista.length}`;
+        }, 100);
+    }    
+
+    function flip() { 
+        const lista = getListaActiva();
+        if (lista.length > 0) cardEl.classList.toggle('flipped'); 
+    }
+    
+    function next() { 
+        const lista = getListaActiva();
+        if(idx < lista.length - 1) { idx++; update(); } 
+    }
+    
+    function prev() { 
+        if(idx > 0) { idx--; update(); } 
+    }
+
+    function shuffle() {
+        const lista = getListaActiva();
+        if (lista.length > 0) {
+            lista.sort(() => Math.random() - 0.5);
+            idx = 0;
+            guardarProgreso(); // Guardamos el orden mezclado
+            update();
+        }
+    } 
+
+    function invertirIdiomas() {
+        invertido = !invertido;
+        document.getElementById('modo-texto').innerText = invertido ? "Checo ➡ Español" : "Español ➡ Checo";
+        update();
+    }
+ 
+    function setFila(tipo) {
+        filaActiva = tipo;
+        idx = 0;
+        
+        if (tipo === 'no') {
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+        } else {
+            document.getElementById('btn-fila-no').classList.remove('active');
+            document.getElementById('btn-fila-si').classList.add('active');
+        }
+        
+        update();
+    }
+
+    function clasificarPalabra(loSabe) {
+        let listaOrigen = filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+        let listaDestino = filaActiva === 'no' ? palabrasYaConozco : palabrasNoConozco;
+
+        if (listaOrigen.length === 0) return;
+
+        if ((filaActiva === 'no' && !loSabe) || (filaActiva === 'si' && loSabe)) {
+            next();
+            return;
+        }
+
+        const palabraMovida = listaOrigen.splice(idx, 1)[0];
+        listaDestino.push(palabraMovida);
+
+        guardarProgreso(); // Guardamos los cambios automáticamente
+        update();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowRight') next();
+        if(e.code === 'ArrowLeft') prev();
+        if(e.code === 'Space') flip();
+    });
+
+    // PASO INICIAL: Cargar progreso antes de renderizar la primera tarjeta
+    cargarProgreso();
+    update();
+</script>
+</body>
+</html>
